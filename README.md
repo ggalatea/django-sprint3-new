@@ -7,7 +7,7 @@ git clone https://github.com/ggalatea/django-sprint3-new.git
 ```
 
 ```
-cd anfisa2sprint
+cd blogicum 
 ```
 
 Cоздать и активировать виртуальное окружение:
