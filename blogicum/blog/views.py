@@ -1,68 +1,35 @@
-from django.shortcuts import render, get_object_or_404
-from django.utils import timezone
-from django.http import Http404
-from blog.models import Post, Category
+from django.shortcuts import get_object_or_404, render
+
+from blog.models import Category
+from blog.utils import get_published_posts
+
+POSTS_LIMIT = 5
 
 
 def index(request):
-    template = 'blog/index.html'
-
-    post_list = (
-        Post.objects.select_related('location', 'author')
-        .prefetch_related('category')
-        .filter(
-            is_published=True,
-            pub_date__lte=timezone.now(),
-            category__is_published=True,
-        )
-        .order_by('-pub_date')[:5]
-    )
-
-    context = {
-        'post_list': post_list,
-    }
-    return render(request, template, context)
+    post_list = get_published_posts()[:POSTS_LIMIT]
+    context = {'post_list': post_list}
+    return render(request, 'blog/index.html', context)
 
 
-def detail(request, id):
-
-    template = 'blog/detail.html'
+def detail(request, post_id):
     post = get_object_or_404(
-        Post.objects.filter(
-            is_published=True, pub_date__lte=timezone.now(), pk=id
-        )
+        get_published_posts(),
+        pk=post_id,
     )
-
-    if not post.category.is_published:
-        raise Http404()
-
-    if post.pub_date > timezone.now():
-        raise Http404()
-
     context = {'post': post}
-    return render(request, template, context)
+    return render(request, 'blog/detail.html', context)
 
 
 def category_posts(request, category_slug):
-    template = 'blog/category.html'
     category = get_object_or_404(
         Category,
         slug=category_slug,
         is_published=True,
     )
-
-    post_list = (
-        Post.objects.select_related('location', 'author')
-        .prefetch_related('category')
-        .filter(
-            category=category,
-            is_published=True,
-            pub_date__lte=timezone.now(),
-        )
-        .order_by('-pub_date')
-    )
+    post_list = get_published_posts().filter(category=category)
     context = {
         'post_list': post_list,
         'category': category,
     }
-    return render(request, template, context)
+    return render(request, 'blog/category.html', context)
